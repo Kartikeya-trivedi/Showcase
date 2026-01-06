@@ -1,3 +1,8 @@
+"""
+TEMPLATE_SELECTOR_AGENT.PY - Template Selection
+Picks best template based on profile
+"""
+
 import json
 from pathlib import Path
 from agno import Agent, Context
@@ -10,31 +15,52 @@ class TemplateSelectorAgent(Agent):
     name = "template_selector_agent"
 
     def run(self, ctx: Context):
+        """Select template based on profile"""
         profile = ctx.state.get("profile")
         if not profile:
-            raise ValueError("TemplateSelectorAgent: profile missing")
+            raise ValueError("No profile found")
 
-        registry = self._load_registry()
+        # Load registry (with fallback)
+        try:
+            registry = self._load_registry()
+        except:
+            # Fallback: use default template
+            ctx.state["template"] = {
+                "id": "t01",
+                "name": "default",
+                "path": "default_template"
+            }
+            return
+
+        # Select template
         template_id = self._select_template(profile, registry)
-        meta = registry[template_id]
+        meta = registry.get(template_id, registry.get("t01"))
 
         ctx.state["template"] = {
             "id": template_id,
             "name": meta["name"],
-            "files": meta["files"],
+            "files": meta.get("files", []),
             "path": str(TEMPLATE_ROOT / f"{template_id}_{meta['name'].lower()}")
         }
 
     def _load_registry(self):
+        """Load template registry"""
         with open(REGISTRY_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def _select_template(self, profile, registry):
+        """Simple template selection logic"""
         role = profile.get("role", "").lower()
         exp = profile.get("experience_years", 0)
 
-        if "developer" in role and "t03" in registry:
-            return "t03"
-        if exp >= 5 and "t02" in registry:
-            return "t02"
+        # Selection logic
+        if "senior" in role or exp >= 7:
+            if "t03" in registry:
+                return "t03"
+        
+        if "developer" in role or "engineer" in role:
+            if "t02" in registry:
+                return "t02"
+        
+        # Default
         return "t01"

@@ -1,181 +1,172 @@
 """
 SCHEMA_BUILDER.PY - Portfolio Schema Construction Agent
 
-PURPOSE:
-This agent transforms raw parsed resume data into a structured portfolio schema.
-It analyzes the user's profile and creates a blueprint for content generation.
-
-DATA FLOW IN:
-- Preprocessed resume data (name, skills, projects, experience, education)
-
-DATA FLOW OUT:
-- Structured schema with:
-  * Hero line template
-  * Bio structure
-  * Project entries with categorization
-  * Skill groupings
-  * Layout hints (what to emphasize)
-
-HOW IT WORKS:
-- Analyzes user's domain (developer, designer, data scientist, etc.)
-- Determines best portfolio structure for their profile
-- Creates templates that the content generator will fill
-- Suggests visual hierarchy and emphasis points
-
-NOTE: THIS CODE IS AI GENERATED, YOUR WORK IS TO ANALYSIS THE CODE AND CHECK THE LOGIC AND MAKE CHANGES
-     WHERE REQUIRED
+Transforms parsed resume data into structured portfolio schema.
+Converted to Agno Agent pattern.
 """
 
+from agno import Agent, Context
 import logging
-from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
 
-class SchemaBuilder:
+class SchemaBuilderAgent(Agent):
     """
-    Builds a neutral, data-driven portfolio schema from preprocessed input.
-
-    This version intentionally avoids:
-    - Role or domain assumptions
-    - Fixed skill categories
-    - Prescriptive visual or content styles
+    Agno Agent that builds portfolio schema from LLM-extracted profile data.
+    
+    INPUT (from ctx.state):
+        - profile: dict with name, role, skills, experience_years, projects
+    
+    OUTPUT (to ctx.state):
+        - schema: structured portfolio blueprint
     """
+    
+    name = "schema_builder_agent"
 
-    def __init__(self, config: Dict[str, Any] | None = None):
-        self.config = config or {}
-        logger.info("Generic SchemaBuilder initialized")
+    def run(self, ctx: Context):
+        """Build schema from profile data"""
+        profile = ctx.state.get("profile")
+        if not profile:
+            raise ValueError("SchemaBuilderAgent: profile missing from context")
 
-    async def build_schema(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Construct a generalized schema that downstream systems
-        (LLMs, renderers, agents) can interpret freely.
-        """
-        try:
-            logger.info("Building generic portfolio schema")
-
-            schema = {
-                "profile_summary": self._build_profile_summary(data),
-                "hero": self._build_hero_schema(data),
-                "bio": self._build_bio_schema(data),
-                "projects": self._build_projects_schema(data),
-                "skills": self._build_skills_schema(data),
-                "layout_hints": self._build_layout_hints(data),
-                "generation_flags": {
-                    "hero": True,
-                    "bio": True,
-                    "projects": True
-                }
-            }
-
-            return schema
-
-        except Exception as e:
-            logger.exception("Schema construction failed")
-            raise e
-
-    def _build_profile_summary(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Extract high-level signals without classification.
-        """
-        return {
-            "name": data.get("name"),
-            "has_projects": bool(data.get("projects")),
-            "has_experience": bool(data.get("experience")),
-            "has_education": bool(data.get("education")),
-            "skill_count": len(data.get("skills", []))
-        }
-
-    def _build_hero_schema(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Neutral hero section. No role-based language.
-        """
-        return {
-            "name": data.get("name", "Portfolio"),
-            "tagline_placeholder": "Concise professional summary",
-            "contact": {
-                "email": data.get("email"),
-                "links": data.get("links", {})
+        logger.info(f"Building schema for profile: {profile.get('name', 'Unknown')}")
+        
+        schema = {
+            "profile_summary": self._build_profile_summary(profile),
+            "hero": self._build_hero_schema(profile),
+            "bio": self._build_bio_schema(profile),
+            "projects": self._build_projects_schema(profile),
+            "skills": self._build_skills_schema(profile),
+            "layout_hints": self._build_layout_hints(profile),
+            "generation_flags": {
+                "hero": True,
+                "bio": True,
+                "projects": True
             }
         }
 
-    def _build_bio_schema(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Structural guidance only.
-        """
+        ctx.state["schema"] = schema
+        logger.info("Schema built successfully")
+
+    def _build_profile_summary(self, profile: dict) -> dict:
+        """Extract high-level profile signals"""
         return {
-            "sections": [
-                "introduction",
-                "background",
-                "work_highlights",
-                "current_interests",
-                "closing"
-            ],
-            "reference_points": self._extract_bio_points(data),
+            "name": profile.get("name"),
+            "role": profile.get("role"),
+            "experience_years": profile.get("experience_years", 0),
+            "has_projects": bool(profile.get("projects")),
+            "skill_count": len(profile.get("skills", []))
+        }
+
+    def _build_hero_schema(self, profile: dict) -> dict:
+        """Build hero section schema"""
+        role = profile.get("role", "Professional")
+        exp = profile.get("experience_years", 0)
+        
+        tagline = f"{role}"
+        if exp > 0:
+            tagline += f" with {exp}+ years experience"
+
+        return {
+            "name": profile.get("name", "Portfolio"),
+            "tagline": tagline,
+            "contact": profile.get("contact", {})
+        }
+
+    def _build_bio_schema(self, profile: dict) -> dict:
+        """Build bio section structure"""
+        bio_points = []
+        
+        if profile.get("role"):
+            bio_points.append(f"Role: {profile['role']}")
+        
+        if profile.get("experience_years"):
+            bio_points.append(f"Experience: {profile['experience_years']} years")
+        
+        if profile.get("skills"):
+            skills_preview = ", ".join(profile["skills"][:5])
+            bio_points.append(f"Key skills: {skills_preview}")
+        
+        if profile.get("projects"):
+            bio_points.append(f"Notable projects: {len(profile['projects'])}")
+
+        return {
+            "sections": ["introduction", "background", "highlights", "closing"],
+            "reference_points": bio_points,
             "length_hint": "medium"
         }
 
-    def _extract_bio_points(self, data: Dict[str, Any]) -> List[str]:
-        points = []
-
-        if data.get("education"):
-            edu = data["education"][0]
-            points.append(
-                f"Education: {edu.get('degree', '')} {edu.get('institution', '')}".strip()
-            )
-
-        if data.get("experience"):
-            points.append(f"Experience entries: {len(data['experience'])}")
-
-        if data.get("projects"):
-            points.append(f"Projects included: {len(data['projects'])}")
-
-        if data.get("skills"):
-            points.append(f"Skills listed: {', '.join(data['skills'][:5])}")
-
-        return points
-
-    def _build_projects_schema(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        projects = data.get("projects", [])
+    def _build_projects_schema(self, profile: dict) -> list:
+        """Build projects schema"""
+        projects = profile.get("projects", [])
+        
+        # If projects is a string or number, convert to basic list
+        if isinstance(projects, (str, int)):
+            return []
+        
         result = []
-
         for idx, project in enumerate(projects):
-            result.append({
-                "id": f"project_{idx}",
-                "title": project.get("title", f"Project {idx + 1}"),
-                "description_source": project.get("description", ""),
-                "technologies": project.get("technologies", []),
-                "links": project.get("links", {}),
-                "priority": "high" if idx < 3 else "normal"
-            })
-
+            if isinstance(project, dict):
+                result.append({
+                    "id": f"project_{idx}",
+                    "title": project.get("title", f"Project {idx + 1}"),
+                    "description": project.get("description", ""),
+                    "technologies": project.get("technologies", []),
+                    "priority": "high" if idx < 3 else "normal"
+                })
+            elif isinstance(project, str):
+                result.append({
+                    "id": f"project_{idx}",
+                    "title": project,
+                    "description": "",
+                    "technologies": [],
+                    "priority": "high" if idx < 3 else "normal"
+                })
+        
         return result
 
-    def _build_skills_schema(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        No categorization assumptions.
-        """
-        skills = data.get("skills", [])
+    def _build_skills_schema(self, profile: dict) -> dict:
+        """Build skills schema"""
+        skills = profile.get("skills", [])
+        
+        # Basic categorization by common patterns
+        categories = {
+            "languages": [],
+            "frameworks": [],
+            "tools": [],
+            "other": []
+        }
+        
+        for skill in skills:
+            skill_lower = skill.lower()
+            if any(lang in skill_lower for lang in ["python", "javascript", "java", "c++", "go", "rust"]):
+                categories["languages"].append(skill)
+            elif any(fw in skill_lower for fw in ["react", "vue", "angular", "django", "flask", "spring"]):
+                categories["frameworks"].append(skill)
+            elif any(tool in skill_lower for tool in ["docker", "git", "aws", "kubernetes", "jenkins"]):
+                categories["tools"].append(skill)
+            else:
+                categories["other"].append(skill)
 
         return {
             "raw": skills,
             "count": len(skills),
-            "grouping": "deferred"  # left to downstream logic
+            "categories": {k: v for k, v in categories.items() if v}  # Only non-empty
         }
 
-    def _build_layout_hints(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Lightweight hints only.
-        """
-        hints = {
-            "sections": ["hero", "projects", "skills"],
-            "optional": [],
-            "density": "balanced"
+    def _build_layout_hints(self, profile: dict) -> dict:
+        """Provide layout suggestions"""
+        sections = ["hero", "bio", "skills"]
+        
+        if profile.get("projects"):
+            sections.insert(2, "projects")
+        
+        exp = profile.get("experience_years", 0)
+        density = "detailed" if exp >= 5 else "balanced"
+
+        return {
+            "sections": sections,
+            "density": density,
+            "emphasis": "projects" if profile.get("projects") else "skills"
         }
-
-        if len(data.get("experience", [])) > 1:
-            hints["sections"].insert(2, "experience")
-        else:
-            hints["optional"].append("experience")
-
-        return hints

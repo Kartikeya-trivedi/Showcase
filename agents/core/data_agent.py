@@ -1,3 +1,8 @@
+"""
+DATA_AGENT.PY - Input Normalization
+Converts any input format to plain text
+"""
+
 from agno import Agent, Context
 
 
@@ -5,13 +10,12 @@ class DataAgent(Agent):
     name = "data_agent"
 
     def run(self, ctx: Context):
-        """
-        Entry normalization agent
-        """
+        """Convert input to raw text"""
         input_data = ctx.state.get("input")
         if not input_data:
-            raise ValueError("DataAgent: input missing")
+            raise ValueError("No input provided")
 
+        # Dict to text
         if isinstance(input_data, dict):
             raw_text = "\n".join(f"{k}: {v}" for k, v in input_data.items())
         else:
