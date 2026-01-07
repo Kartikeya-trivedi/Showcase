@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 async def process_resume_task(job_id: str, file: UploadFile, user_id: str):
     start_time = time.time()
-    logger.info(f"Starting processing for Job: {job_id} (User: {user_id})")
+    logger.info(f"Job {job_id}: Processing started for User {user_id}")
 
     with Session(engine) as db:
         try:
@@ -25,7 +25,7 @@ async def process_resume_task(job_id: str, file: UploadFile, user_id: str):
             new_portfolio = Portfolio(
                 job_id=job_id,
                 user_id=user_id,
-                full_name=portfolio_json.get("hero", {}).get("name", "User"),
+                full_name=portfolio_json.get("hero", {}).get("name", "Aspiring Professional"),
                 content=portfolio_json,
                 is_published=False
             )
@@ -36,12 +36,12 @@ async def process_resume_task(job_id: str, file: UploadFile, user_id: str):
             db.refresh(new_portfolio)
             
             duration = time.time() - start_time
-            logger.info(f"Job {job_id} successfully completed in {duration:.2f}s")
+            logger.info(f"Job {job_id}: Successfully completed in {duration:.2f}s")
 
         except Exception as e:
             db.rollback()
             elapsed = time.time() - start_time
-            logger.exception(f"Job {job_id} failed after {elapsed:.2f}s: {str(e)}")
+            logger.exception(f"Job {job_id}: Failed after {elapsed:.2f}s | Error: {str(e)}")
             raise
 
         finally:
