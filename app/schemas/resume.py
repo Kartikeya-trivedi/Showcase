@@ -13,6 +13,6 @@ class ResumeDataInput(BaseModel):
     phone: Optional[str] = None
     location: Optional[str] = None
     skills: List[str] = Field(default_factory=list)
-    experience: List[dict] = Field(default_factory=list)
+    experience: Optional[List[dict]] = Field(default_factory=list)
     education: List[dict] = Field(default_factory=list)
-    projects: List[dict] = Field(default_factory=list)
+    projects: Optional[List[dict]] = Field(default_factory=list)
