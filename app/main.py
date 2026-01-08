@@ -18,6 +18,9 @@ from app.core.config import settings
 from app.adapters.database import engine, Base
 from app.models.portfolio import Portfolio
 from app.models.chat_message import ChatMessage 
+from app.adapters.database import engine
+from app.models.portfolio import Portfolio
+from app.models.user import User  # GitHub OAuth user model
 
 logger = logging.getLogger(__name__)
 
