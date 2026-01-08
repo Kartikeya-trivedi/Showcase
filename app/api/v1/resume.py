@@ -14,7 +14,7 @@ async def upload_resume(
     db=Depends(dependencies.get_db),
     current_user: dict = Depends(verify_firebase_token)
 ):
-   if not file.filename.lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
+    if not file.filename.lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
         raise HTTPException(
             status_code=400, 
             detail="Invalid file format. Please upload a PDF or an Image."

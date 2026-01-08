@@ -1,4 +1,4 @@
-from app.adapters.gemini_adapter import gemini_adapter
+from app.adapters.gemini_adapter import GeminiAdapter
 from fastapi import UploadFile, HTTPException
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  
