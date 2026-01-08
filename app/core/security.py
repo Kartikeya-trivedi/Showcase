@@ -1,38 +1,21 @@
-from datetime import datetime, timedelta, timezone
-from typing import Any, Union
-from jose import jwt
-from passlib.context import CryptContext
+import firebase_admin
+from firebase_admin import credentials, auth
+from fastapi import HTTPException, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+cred = credentials.Certificate(settings.FIREBASE_SERVICE_ACCOUNT_PATH)
+firebase_admin.initialize_app(cred)
 
-def create_access_token(
-    subject: Union[str, Any], expires_delta: timedelta = None
-) -> str:
-   
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+security = HTTPBearer()
+
+async def verify_firebase_token(res: HTTPAuthorizationCredentials = Security(security)):
+    token = res.credentials
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid or expired Firebase token: {str(e)}"
         )
-    
-    to_encode = {
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
-        "sub": str(subject),
-        "iss": settings.PROJECT_NAME
-    }
-    
-    encoded_jwt = jwt.encode(
-        to_encode, 
-        settings.SECRET_KEY, 
-        algorithm=settings.JWT_ALGORITHM
-    )
-    return encoded_jwt
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
