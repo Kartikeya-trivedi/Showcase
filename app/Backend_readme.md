@@ -1,180 +1,93 @@
-# Showcase Backend Infrastructure Documentation
+# 🚀 Showcase AI - Backend Portfolio Engine
 
-## Overview
+**Showcase AI** is an industry-grade backend infrastructure designed to transform raw resumes into stunning, professional portfolios using **Multi-Agent Systems** and **Google Gemini 1.5 Vision**.
 
-The **app** folder is the orchestration engine and command center of the Showcase platform. While the `agents` folder handles the "thinking," the backend manages the **lifecycle**—handling file ingestion, database persistence, asynchronous task scheduling, and secure cloud deployment.
-
-Built with **FastAPI**, it follows a strict **Layered Architecture** to ensure that our "no-compromise" technical standards are met through clean separation of concerns.
-
-## What This System Does
-
-### Input (What Comes In)
-
-* **Resume Files**: PDF or Image uploads via Multipart/form-data.
-* **User Metadata**: Preferences for themes, custom links, and professional tone.
-* **Auth Tokens**: Secure JWTs for user session management.
-
-### Output (What Goes Out)
-
-* **Structured JSON**: Validated portfolio data ready for the frontend generator.
-* **Live Portfolio URL**: The endpoint where the user's site is deployed (e.g., via Vercel).
-* **Job Status**: Real-time updates on the AI generation progress.
+[Image of a professional software architecture diagram showing the relationship between FastAPI, Firebase, PostgreSQL, and Google Gemini]
 
 ---
 
-## Architecture
+## 🏗️ Architecture Overview
 
-### The Execution Pipeline
+The system is built on a **High-Performance Asynchronous Architecture** using industry-standard patterns:
 
-```
-HTTP Request (PDF Upload)
-      ↓
-[1. API Layer] ← Validates request & returns Job ID
-      ↓
-[2. Tasks Layer] ← Offloads work to Background Worker
-      ↓
-[3. Service Layer] ← Orchestrates OCR -> Agents -> Deploy
-      ↓
-[4. Adapter Layer] ← Communicates with DB & Gemini
-      ↓
-[5. Persistence] ← Saves final portfolio to PostgreSQL
-
-```
-
-### Backend Hierarchy
-
-```
-app/
-├── main.py                 #  Entry Point - Initializes FastAPI & Routers
-├── tasks.py                #  Background Jobs - Orchestrates the AI lifecycle
-├── api/                    #  HTTP Layer - Routes and Controller logic
-│   └── v1/                 # Versioned Endpoints (resume, portfolio)
-├── services/               #  Business Logic - The "Brain" of the backend
-│   ├── ai_service.py       # Bridge to agents/integration.py
-│   └── ocr_service.py      # Text extraction orchestration
-├── schemas/                #  Data Contracts - Pydantic validation models
-├── models/                 #  Persistence - SQLAlchemy database definitions
-├── adapters/               #  Infrastructure - External system wrappers
-└── core/                   #  Settings - Security, Config, and Env vars
-
-```
+* **FastAPI Framework**: Leveraging Python's `asyncio` for non-blocking I/O operations and high-concurrency handling.
+* **Google Gemini 1.5 Vision**: Cloud-native OCR and document understanding, replacing traditional Tesseract with superior layout recognition and contextual awareness.
+* **Firebase Authentication**: Enterprise-grade Google Sign-In integration with server-side JWT-based token verification.
+* **SQLModel (PostgreSQL)**: A unified data layer combining the power of SQLAlchemy with Pydantic's type safety for resilient data persistence.
+* **Background Task Orchestrator**: Offloading heavy AI generation and image processing to background worker threads to maintain sub-second API responsiveness.
 
 ---
 
-##  File-by-File Breakdown
+## 🛡️ Security & Identity Management
 
-### 1️⃣ `api/v1/resume.py` & `portfolio.py`
+We have implemented a **Zero-Trust Identity Flow** to ensure user data integrity:
 
-**Purpose**: These are the "front doors" for the frontend.
+1.  **Authentication**: Handled via Firebase Google Login on the client side.
+2.  **Authorization**: The backend verifies every request using the **Firebase Admin SDK**, extracting the `uid` from the bearer token to ensure strict data ownership.
+3.  **RBAC (Role-Based Access Control)**:
+    * **Private**: Only the portfolio owner (matching Firebase `uid`) can edit or view drafts.
+    * **Public**: Anyone can view a portfolio once it is marked `is_published` and assigned a custom URL slug.
 
-* **`resume.py`**: Handles the initial PDF upload. It triggers the background task and returns a `job_id`.
-* **`portfolio.py`**: Allows users to fetch their generated data or request a "regeneration" of specific sections.
-
-### 2️⃣ `services/ai_service.py` - The Agentic Bridge
-
-**Purpose**: This is the dedicated service that communicates with your Agentic Team's folder.
-
-* **Role**: It maps the internal backend data into the format expected by `agents/integration.py`.
-* **Standard**: It ensures that if the Agentic logic changes, we only need to update this one file in the backend.
-
-### 3️⃣ `schemas/portfolio.py` - The Validator
-
-**Purpose**: To ensure the AI output is 100% accurate before it hits our database.
-
-* **Strictness**: Uses Pydantic to verify that the JSON returned by the agents contains all required fields (Hero, Projects, Skills) in the correct format.
-
-### 4️⃣ `tasks.py` - The Background Orchestrator
-
-**Purpose**: Handles long-running AI processes (4-10 seconds) so the user doesn't experience a lag.
-
-* **Logic**:
-1. Trigger `ocr_service` to get text.
-2. Call `ai_service` to generate content.
-3. Save result to `models/portfolio.py`.
-4. Update job status to `COMPLETED`.
-
-
+[Image of a Firebase authentication flow diagram showing the frontend, Firebase server, and backend interaction]
 
 ---
 
-##  Complete Data Flow Example
+## 🤖 AI Processing Pipeline
 
-### Step-by-Step Processing
+The backend serves as the orchestration layer for the **Agentic Intelligence**:
 
-#### 🔹 Step 1: Request & Validation (`api/` + `schemas/`)
+1.  **Ingestion**: Resumes (PDF/Images) are validated for size (5MB limit) and type before being streamed to the OCR Service.
+2.  **Vision OCR**: Gemini 1.5 Flash extracts hierarchical Markdown text, preserving the visual structure of the original resume.
+3.  **Agentic Handoff**: The extracted text is processed by a multi-agent orchestrator that generates a structured portfolio JSON.
+4.  **Validation**: Every AI output is strictly validated against a **Pydantic Schema** (Contract) before being saved to the database to prevent hallucinations or malformed payloads.
 
-User sends a PDF. The backend uses `schemas/resume.py` to ensure the file is valid.
-
-```python
-# API returns immediately
-{ "job_id": "7aff-...", "status": "processing" }
-
-```
-
-#### 🔹 Step 2: Extraction & Intelligence (`services/`)
-
-The `tasks.py` worker picks up the job.
-
-1. **OCR**: `ocr_service` extracts raw text.
-2. **AI**: `ai_service` calls `agents.integration.generate_portfolio(text)`.
-
-#### 🔹 Step 3: Persistence (`models/` + `adapters/`)
-
-The generated JSON is validated against `schemas/portfolio.py` and saved into PostgreSQL using the session managed in `adapters/database.py`.
+[Image of a background task lifecycle showing the steps of ingestion, processing, validation, and storage]
 
 ---
 
-##  Design Principles
+## 🚀 Getting Started
 
-1. **Stateless API**: The backend can scale horizontally because all session data is in the DB/JWT.
-2. **Thin Controllers**: API routes should contain no logic—only calls to the `services` layer.
-3. **Dependency Injection**: Uses `api/dependencies.py` to manage database connections and authentication cleanly.
-4. **Fail-Safe Backgrounding**: If the AI Agent fails, `tasks.py` catches the error and updates the DB status so the frontend can show a "Retry" button.
+### 1. Prerequisites
+* Python 3.10+
+* PostgreSQL Database
+* Firebase Service Account Key (`.json`)
+* Google AI Studio API Key (Gemini)
 
----
+### 2. Installation
+```bash
+git clone [https://github.com/your-username/showcase-ai-backend.git](https://github.com/your-username/showcase-ai-backend.git)
+cd showcase-ai-backend
+pip install -r requirements.txt
 
-##  Configuration & Security
+## ⚙️ Configuration & Environment
 
-### Environment Variables (`core/config.py`)
+The application uses **Pydantic Settings** to manage environment variables. Create a `.env` file in the root directory to store your credentials:
 
 ```bash
-# Security & DB
-DATABASE_URL="postgresql+psycopg2://..."
-SECRET_KEY="your-jwt-secret"
+# Environment
+ENV=development
+SECRET_KEY=yoursecretkeyhere_min_32_chars
 
-# AI Integration
-GEMINI_API_KEY="your-google-api-key"
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/showcase_db
 
-```
+# Firebase Auth
+FIREBASE_SERVICE_ACCOUNT_PATH=firebase-service-account.json
 
-### Security (`core/security.py`)
+# Google Gemini AI
+GEMINI_API_KEY=your_google_gemini_key
+GEMINI_VISION_MODEL=gemini-1.5-flash
+GEMINI_AGENT_MODEL=gemini-1.5-pro
 
-* **JWT Authentication**: Ensures only the owner can edit their portfolio.
-* **CORS Middleware**: Configured in `main.py` to only allow requests from our trusted frontend.
+# CORS
+BACKEND_CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 
----
+### Running the Server
+# Install dependencies
+pip install -r requirements.txt
 
-##  Quality Metrics
-
-### Backend Efficiency Score
-
-We measure performance based on:
-
-* **Response Time**: Time taken to return a `job_id` (< 200ms).
-* **OCR Accuracy**: Success rate of text extraction.
-* **DB Integrity**: Zero "orphan" records—every portfolio must link to a user.
-
----
-
-##  Key Roles Summary
-
-| Layer | Responsibility | Primary Tool |
-| --- | --- | --- |
-| **API** | Handle Requests | FastAPI Routers |
-| **Services** | Logic Orchestration | Python Class Methods |
-| **Schemas** | Data Contracts | Pydantic Models |
-| **Adapters** | External I/O | SQLAlchemy / Gemini SDK |
-| **Tasks** | Performance | Asyncio / BackgroundTasks |
+# Start the FastAPI server with auto-reload for development
+uvicorn app.main:app --reload
 
 
-**END OF BACKEND DOCUMENTATION**
+🛣️ API EndpointsThe API is versioned under /api/v1 to follow industry-standard REST practices.📄 Resume ManagementMethodEndpointDescriptionAuthPOST/api/v1/resume/uploadValidates file and triggers background AI pipeline.✅ Firebase🎨 Portfolio ManagementMethodEndpointDescriptionAuthGET/api/v1/portfolio/meFetches all portfolios owned by the logged-in user.✅ FirebaseGET/api/v1/portfolio/{job_id}Fetches detailed private portfolio data.✅ FirebasePATCH/api/v1/portfolio/{job_id}/publishToggles visibility and sets a custom URL slug.✅ FirebaseGET/api/v1/portfolio/public/{slug}Public Gateway: Accessible by anyone via unique link.❌ Public🏥 System HealthMethodEndpointDescriptionAuthGET/healthReturns service status, version, and auth engine.❌ Public
