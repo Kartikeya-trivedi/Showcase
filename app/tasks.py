@@ -1,8 +1,8 @@
 import logging
 import time
 from fastapi import UploadFile
-from sqlmodel import Session
-from app.adapters.database import engine
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.adapters.database import AsyncSessionLocal
 from app.models.portfolio import Portfolio
 from app.services.ocr_service import ocr_service
 from app.services.ai_service import ai_service
@@ -13,7 +13,7 @@ async def process_resume_task(job_id: str, file: UploadFile, user_id: str):
     start_time = time.time()
     logger.info(f"Job {job_id}: Processing started for User {user_id}")
 
-    with Session(engine) as db:
+    async with AsyncSessionLocal() as db:
         try:
             raw_text = await ocr_service.extract_text(file)
             
@@ -31,15 +31,15 @@ async def process_resume_task(job_id: str, file: UploadFile, user_id: str):
             )
             
             db.add(new_portfolio)
-            db.commit()
+            await db.commit()
 
-            db.refresh(new_portfolio)
+            await db.refresh(new_portfolio)
             
             duration = time.time() - start_time
-           logger.info(f"Job {job_id}: Successfully completed in {duration:.2f}s")
+            logger.info(f"Job {job_id}: Successfully completed in {duration:.2f}s")
 
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             elapsed = time.time() - start_time
             logger.exception(f"Job {job_id}: Failed after {elapsed:.2f}s | Error: {str(e)}")
             raise
