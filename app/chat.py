@@ -41,13 +41,16 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("WebSocket Connected - Using Gemini Next-Gen")
     
+    # Session management
+    user_id = "dev_user_01"  # Placeholder until auth is implemented
+    session_id = str(uuid.uuid4())
+    
+    # Get database session
+    db_gen = get_db()
+    db: AsyncSession = await anext(db_gen)
+    
     try:
-        # Switching to the new model string as requested.
-        # Your team likely wants 'gemini-2.0-flash' or 'gemini-3-flash'
-        model = genai.GenerativeModel('gemini-2.5-flash') 
-        
-        chat_session = model.start_chat(history=[])
-
+        # Main chat loop
         while True:
             # Receive user message
             user_input = await websocket.receive_text()

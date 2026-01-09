@@ -79,7 +79,9 @@ class GeminiAdapter:
 
         self.api_key = api_key
         # Use newer model default
-        self.model_name = "gemini-1.5-flash" 
+        self.api_key = api_key
+        # Use newer model default if not specified
+        self.model_name = "gemini-1.5-flash" if model_name == "gemini-pro" else model_name
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
 

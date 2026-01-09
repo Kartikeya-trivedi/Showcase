@@ -32,19 +32,18 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """
     Application lifespan handler.
-    
-    logger.info("Showcase AI: Application starting up")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    logger.info("Showcase AI: Application shutting down")
-    await engine.dispose()
-    
     """
-logger.info("Showcase AI: Initializing Infrastructure...")
+    logger.info("Showcase AI: Application starting up")
+    
+    # Create tables
+    # Note: In production you would use Alembic for migrations
+    from sqlmodel import SQLModel
     SQLModel.metadata.create_all(engine)
-    yield 
-    logger.info(" Showcase AI: Shutting down safely")
+    
+    yield
+    
+    logger.info("Showcase AI: Application shutting down")
+    engine.dispose()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
