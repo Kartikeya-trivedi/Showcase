@@ -40,9 +40,15 @@ mock_types.HarmCategory = MagicMock()
 mock_types.HarmBlockThreshold = MagicMock()
 mock_genai.types = mock_types
 
-mock_genai.GenerativeModel.return_value = mock_model
-sys.modules["google.generativeai"] = mock_genai
-sys.modules["google.generativeai.types"] = mock_types
+# Mock the new google.genai API
+mock_genai.Client = MagicMock(return_value=mock_genai)
+mock_genai.Client.return_value.models.generate_content = mock_model.generate_content
+mock_genai.Client.return_value.aio = MagicMock()
+mock_genai.Client.return_value.aio.models = MagicMock()
+mock_genai.Client.return_value.aio.models.generate_content = mock_model.generate_content_async
+
+sys.modules["google.genai"] = mock_genai
+sys.modules["google.genai.types"] = mock_types
 
 # Import app after setting env vars
 from fastapi.testclient import TestClient
